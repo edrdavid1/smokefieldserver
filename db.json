@@ -1,0 +1,36 @@
+{
+  "users": [
+    {
+      "name": "Іван Іваноў",
+      "uniqecode": "USER001",
+      "password": "$2a$10$y5J0jTl7UrG8Ol6sK2kE6eERuJ1Pev1oz/Y2WzlnkFH17mNi/ZvVi",
+      "confirmed": true,
+      "currentNum": 10,
+      "totalNum": 15
+    },
+    {
+      "name": "Пётр Пятроў",
+      "uniqecode": "USER002",
+      "password": "$2a$10$y5J0jTl7UrG8Ol6sK2kE6eERuJ1Pev1oz/Y2WzlnkFH17mNi/ZvVi",
+      "confirmed": true,
+      "currentNum": 25,
+      "totalNum": 30
+    },
+    {
+      "name": "pidor123",
+      "uniqecode": "pidor123",
+      "password": "$2a$10$8b8lXnffCh0fnSnpJrKvTeymcd5JsCH4L0P0QbV8Usk.Vr1PRKdVC",
+      "confirmed": true,
+      "currentNum": 1,
+      "totalNum": 1
+    },
+    {
+      "name": "maksimpidor",
+      "uniqecode": "maksimpidor",
+      "password": "$2a$10$jS..jkAZLbBWLaoY7/mktO2KGR2DRFCIwIOx4GZLA/yVV6kMuTRzO",
+      "confirmed": true,
+      "currentNum": 12,
+      "totalNum": 20
+    }
+  ]
+}
