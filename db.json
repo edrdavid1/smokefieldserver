@@ -21,15 +21,15 @@
       "uniqecode": "pidor123",
       "password": "$2a$10$8b8lXnffCh0fnSnpJrKvTeymcd5JsCH4L0P0QbV8Usk.Vr1PRKdVC",
       "confirmed": true,
-      "currentNum": 1,
-      "totalNum": 1
+      "currentNum": 3,
+      "totalNum": 3
     },
     {
       "name": "maksimpidor",
       "uniqecode": "maksimpidor",
       "password": "$2a$10$jS..jkAZLbBWLaoY7/mktO2KGR2DRFCIwIOx4GZLA/yVV6kMuTRzO",
       "confirmed": true,
-      "currentNum": 12,
+      "currentNum": 10,
       "totalNum": 20
     }
   ]
