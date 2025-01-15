@@ -178,7 +178,7 @@ app.post('/register',
             const newUser = new User({
                 name,
                 uniqecode: username,
-                email,
+                email:email,
                 password: hashedPassword,
                 confirmed: true,
                 currentNum,
