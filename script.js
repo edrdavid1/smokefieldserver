@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema({
     name: String,
     uniqecode: { type: String, unique: true, required: true },
     password: String,
+    email: String,
     confirmed: Boolean,
     currentNum: Number,
     totalNum: Number,
