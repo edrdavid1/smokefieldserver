@@ -145,40 +145,54 @@ app.post('/updateuser', async (req, res) => {
 }
 });
 
-app.post('/register', async (req, res) => {
-    const { username, password, name } = req.body;
+const { body, validationResult } = require('express-validator');
 
-    const currentNum = 0;
-    const totalNum = 0; 
+app.post('/register', 
+    // Validation middleware
+    body('email').isEmail().withMessage('Please enter a valid email'),
+    body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters long'),
+    async (req, res) => {
+        const { username, password, name, email } = req.body;
 
-    if (!username || !password || !name) {
-        return res.status(400).json({ message: 'All fields are required.' });
-    }
+        const currentNum = 0;
+        const totalNum = 0;
 
-    try {
-        const existingUser = await User.findOne({ uniqecode: username });
-        if (existingUser) {
-            return res.status(400).json({ message: 'Username is already taken.' });
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        if (!username || !password || !name || !email)  {
+            return res.status(400).json({ message: 'All fields are required.' });
+        }
 
-        const newUser = new User({
-            name,
-            uniqecode: username,
-            password: hashedPassword,
-            confirmed: true,
-            currentNum,
-            totalNum
-        });
+        try {
+            const existingUser = await User.findOne({ uniqecode: username });
+            if (existingUser) {
+                return res.status(400).json({ message: 'Username is already taken.' });
+            }
 
-        await newUser.save();
-        res.status(201).json({ message: 'User registered successfully.' });
-    } catch (error) {
-        console.error('Error registering user:', error);
-        res.status(500).json({ message: 'Server error.' });
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            const newUser = new User({
+                name,
+                uniqecode: username,
+                email,
+                password: hashedPassword,
+                confirmed: true,
+                currentNum,
+                totalNum
+            });
+
+            await newUser.save();
+            res.status(201).json({ message: 'User registered successfully.' });
+        } catch (error) {
+            console.error('Error registering user:', error);
+            res.status(500).json({ message: 'Server error.' });
+        }
     }
-});
+);
 
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
