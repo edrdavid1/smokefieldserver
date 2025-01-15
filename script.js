@@ -23,6 +23,10 @@ const http = require('http');
 const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Сервер працуе на порце ${PORT}`);
+});
+
 
 // Мадэль карыстальніка
 const userSchema = new mongoose.Schema({
