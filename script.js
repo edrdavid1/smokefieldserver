@@ -5,6 +5,46 @@ const bcrypt = require('bcryptjs');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const nodemailer = require('nodemailer');
+
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,  
+      pass: process.env.GMAIL_PASS   
+    }
+  });  
+
+
+  function sendConfirmationEmail(email, confirmationCode) {
+    const mailOptions = {
+        from: 'smokefieldbot1@gmail.com',  // Ваш адрас Gmail
+        to: email,                     // Адрас атрымальніка
+        subject: 'Email confirmation',  // Тэма ліста
+        text: `Ваш код: ${confirmationCode}`  // Тэкст ліста
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.log('Памылка пры адпраўцы ліста:', error);
+        } else {
+            console.log('Ліст адпраўлены:', info.response);
+        }
+    });
+}
+
+  function generateConfirmationCode() {
+    return Math.floor(100000 + Math.random() * 900000);
+  }
+  
+
+  
+
+
+
+
+
 
 dotenv.config();
 
@@ -101,6 +141,31 @@ wss.on('connection', (ws) => {
     });
 });
 
+
+
+app.post('/confirm-email', async (req, res) => {
+    const { email, confirmationCode } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        if (user.confirmationCode !== confirmationCode) {
+            return res.status(400).json({ message: 'Invalid confirmation code.' });
+        }
+
+        user.confirmed = true; // Абнаўляем статус пацверджання
+        await user.save();
+
+        res.status(200).json({ message: 'Email confirmed successfully.' });
+    } catch (error) {
+        console.error('Error confirming email:', error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
+
 // HTTP маршруты
 app.get('/userdata/:username', async (req, res) => {
     const { username } = req.params;
@@ -148,52 +213,41 @@ app.post('/updateuser', async (req, res) => {
 
 const { body, validationResult } = require('express-validator');
 
-app.post('/register', 
-    // Validation middleware
-    body('email').isEmail().withMessage('Please enter a valid email'),
-    body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters long'),
-    async (req, res) => {
-        const { username, password, name, email } = req.body;
+app.post('/register', async (req, res) => {
+    const { username, password, name, email } = req.body;
+    const confirmationCode = generateConfirmationCode(); // Генерацыя кода
 
-        const currentNum = 0;
-        const totalNum = 0;
-
-        // Check for validation errors
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+    try {
+        const existingUser = await User.findOne({ uniqecode: username });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Username is already taken.' });
         }
 
-        if (!username || !password || !name || !email)  {
-            return res.status(400).json({ message: 'All fields are required.' });
-        }
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        try {
-            const existingUser = await User.findOne({ uniqecode: username });
-            if (existingUser) {
-                return res.status(400).json({ message: 'Username is already taken.' });
-            }
+        const newUser = new User({
+            name,
+            uniqecode: username,
+            email,
+            password: hashedPassword,
+            confirmed: false,  // Пакуль не пацверджаны
+            confirmationCode,  // Дадаць код пацверджання
+            currentNum: 0,
+            totalNum: 0
+        });
 
-            const hashedPassword = await bcrypt.hash(password, 10);
+        await newUser.save();
+        
+        // Адпраўляем код на пошту
+        sendConfirmationEmail(email, confirmationCode);
 
-            const newUser = new User({
-                name,
-                uniqecode: username,
-                email:email,
-                password: hashedPassword,
-                confirmed: true,
-                currentNum,
-                totalNum
-            });
-
-            await newUser.save();
-            res.status(201).json({ message: 'User registered successfully.' });
-        } catch (error) {
-            console.error('Error registering user:', error);
-            res.status(500).json({ message: 'Server error.' });
-        }
+        res.status(201).json({ message: 'User registered successfully. Please check your email to confirm your account.' });
+    } catch (error) {
+        console.error('Error registering user:', error);
+        res.status(500).json({ message: 'Server error.' });
     }
-);
+});
+
 
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
