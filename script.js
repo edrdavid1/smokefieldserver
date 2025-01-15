@@ -19,16 +19,35 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
-
+const http = require('http');
 const WebSocket = require('ws');
+const mongoose = require('mongoose');
 
-const socket = new WebSocket("wss://smokefieldserver.onrender.com");
 
-const clients = new Map(); 
+// Мадэль карыстальніка
+const userSchema = new mongoose.Schema({
+    name: String,
+    uniqecode: { type: String, unique: true, required: true },
+    password: String,
+    confirmed: Boolean,
+    currentNum: Number,
+    totalNum: Number,
+});
 
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('Падключаны да базы дадзеных'))
-    .catch(err => console.error('Памылка падключэння да базы:', err));
+const User = mongoose.model('User', userSchema);
+
+// Падключэнне да базы дадзеных
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mydb', {
+    serverSelectionTimeoutMS: 30000,
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch(err => console.error('Error connecting to MongoDB:', err));
+
+// HTTP і WebSocket серверы
+const server = http.createServer();
+const wss = new WebSocket.Server({ server });
+
+const clients = new Map();
 
 wss.on('connection', (ws) => {
     console.log('Новы кліент падключаны.');
@@ -37,16 +56,12 @@ wss.on('connection', (ws) => {
         const data = JSON.parse(message);
 
         if (data.type === 'register') {
-            // Захоўваем злучэнне карыстальніка
             clients.set(data.userId, ws);
             console.log(`Карыстальнік зарэгістраваны: ${data.userId}`);
-        }
-
-        if (data.type === 'sendCig') {
+        } else if (data.type === 'sendCig') {
             const { userGG, cig } = data;
 
             try {
-                // Знаходзім атрымальніка ў базе дадзеных
                 const recipient = await User.findOne({ uniqecode: userGG });
                 if (!recipient) {
                     console.error(`Карыстальнік ${userGG} не знойдзены.`);
@@ -54,25 +69,25 @@ wss.on('connection', (ws) => {
                     return;
                 }
 
-                // Правяраем, ці падключаны атрымальнік
                 const recipientSocket = clients.get(userGG);
                 if (recipientSocket && recipientSocket.readyState === WebSocket.OPEN) {
-                    // Адпраўляем cig атрымальніку
                     recipientSocket.send(JSON.stringify({ cig }));
                     console.log(`Cig: ${cig} адпраўлены карыстальніку: ${userGG}`);
                 } else {
                     console.error(`Карыстальнік ${userGG} не падключаны.`);
-                    ws.send(JSON.stringify({ type: 'error', message: 'Recipient not connected' }));
+                    ws.send(JSON.stringify({ type: 'error', message: `Recipient ${userGG} not connected` }));
                 }
             } catch (error) {
-                console.error('Памылка апрацоўкі:', error);
+                console.error('Памылка апрацоўкі:', error.message, error.stack);
                 ws.send(JSON.stringify({ type: 'error', message: 'Server error' }));
             }
+        } else {
+            console.warn(`Невядомы тып паведамлення: ${data.type}`);
+            ws.send(JSON.stringify({ type: 'error', message: 'Unknown message type' }));
         }
     });
 
     ws.on('close', () => {
-        // Выдаляем карыстальніка з карты пры адключэнні
         for (let [userId, socket] of clients.entries()) {
             if (socket === ws) {
                 clients.delete(userId);
@@ -83,24 +98,11 @@ wss.on('connection', (ws) => {
     });
 });
 
-
-mongoose.connect(dbUri, {
-    serverSelectionTimeoutMS: 30000 
-  })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Error connecting to MongoDB:', err));
-  
-
-const userSchema = new mongoose.Schema({
-    name: String,
-    uniqecode: { type: String, unique: true },
-    password: String,
-    confirmed: Boolean,
-    currentNum: Number,
-    totalNum: Number
+// Запуск сервера
+server.listen(PORT, () => {
+    console.log(`Сервер працуе на порце ${PORT}`);
 });
 
-const User = mongoose.model('User', userSchema);
 
 app.get('/userdata/:username', async (req, res) => {
     const { username } = req.params;
