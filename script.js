@@ -226,6 +226,7 @@ const { body, validationResult } = require('express-validator');
 
 app.post('/register', async (req, res) => {
     const { username, password, name, email } = req.body;
+
     const confirmationCode = generateConfirmationCode(); // Генерацыя кода
 
     try {
@@ -235,21 +236,20 @@ app.post('/register', async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const confirmationCode = generateConfirmationCode(); 
+        
         const newUser = new User({
             name,
             uniqecode: username,
             email,
             password: hashedPassword,
-            confirmed: false,  // Пакуль не пацверджаны
-            confirmationCode,  // Дадаць код пацверджання
+            confirmed: false,
+            confirmationCode,  // Дадаем код пацверджання
             currentNum: 0,
             totalNum: 0,
-            
         });
 
         await newUser.save();
-        
+
         // Адпраўляем код на пошту
         sendConfirmationEmail(email, confirmationCode);
 
@@ -259,7 +259,6 @@ app.post('/register', async (req, res) => {
         res.status(500).json({ message: 'Server error.' });
     }
 });
-
 
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
