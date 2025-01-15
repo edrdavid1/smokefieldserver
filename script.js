@@ -147,30 +147,38 @@ wss.on('connection', (ws) => {
 app.post('/confirm-email', async (req, res) => {
     const { email, confirmationCode } = req.body;
 
+    console.log('Request body:', req.body); // Адладка
+
     if (!email || !confirmationCode) {
+        console.log('Missing email or confirmation code');
         return res.status(400).json({ message: 'Email and confirmation code are required.' });
     }
 
     try {
         const user = await User.findOne({ email });
+        console.log('Found user:', user); // Адладка
+
         if (!user) {
+            console.log('User not found for email:', email);
             return res.status(404).json({ message: 'User not found.' });
         }
 
         if (user.confirmationCode !== confirmationCode) {
+            console.log(`Invalid code. Expected: ${user.confirmationCode}, Received: ${confirmationCode}`);
             return res.status(400).json({ message: 'Invalid confirmation code.' });
         }
 
-        user.confirmed = true; // Абнаўляем статус пацверджання
+        user.confirmed = true;
         await user.save();
+        console.log('Email confirmed for:', email); // Адладка
 
         res.status(200).json({ message: 'Email confirmed successfully.' });
     } catch (error) {
         console.error('Error confirming email:', error);
         res.status(500).json({ message: 'Server error.' });
     }
-
 });
+
 
 // HTTP маршруты
 app.get('/userdata/:username', async (req, res) => {
