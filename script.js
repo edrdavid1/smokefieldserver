@@ -22,7 +22,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: 3001 });
+const socket = new WebSocket("wss://smokefieldserver.onrender.com");
 
 const clients = new Map(); 
 
