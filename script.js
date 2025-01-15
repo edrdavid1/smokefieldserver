@@ -10,23 +10,24 @@ dotenv.config();
 
 const app = express();
 
-
 app.use(cors());
 const dbUri = process.env.MONGODB_URI;
-
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
 const http = require('http');
 const WebSocket = require('ws');
 
+// Стварыце HTTP-сервер перад яго запускам
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
 const PORT = process.env.PORT || 3000;
+
 server.listen(PORT, () => {
     console.log(`Сервер працуе на порце ${PORT}`);
 });
-
 
 // Мадэль карыстальніка
 const userSchema = new mongoose.Schema({
@@ -47,10 +48,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mydb', {
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => console.error('Error connecting to MongoDB:', err));
 
-// HTTP і WebSocket серверы
-const server = http.createServer();
-const wss = new WebSocket.Server({ server });
-
+// WebSocket апрацоўка
 const clients = new Map();
 
 wss.on('connection', (ws) => {
@@ -102,12 +100,7 @@ wss.on('connection', (ws) => {
     });
 });
 
-// Запуск сервера
-server.listen(PORT, () => {
-    console.log(`Сервер працуе на порце ${PORT}`);
-});
-
-
+// HTTP маршруты
 app.get('/userdata/:username', async (req, res) => {
     const { username } = req.params;
     try {
@@ -208,4 +201,3 @@ app.post('/login', async (req, res) => {
         res.status(500).json({ message: 'Server error.' });
     }
 });
-
