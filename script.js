@@ -78,6 +78,7 @@ const userSchema = new mongoose.Schema({
     confirmed: Boolean,
     currentNum: Number,
     totalNum: Number,
+    confirmationCode: String,
 });
 
 const User = mongoose.model('User', userSchema);
@@ -146,6 +147,10 @@ wss.on('connection', (ws) => {
 app.post('/confirm-email', async (req, res) => {
     const { email, confirmationCode } = req.body;
 
+    if (!email || !confirmationCode) {
+        return res.status(400).json({ message: 'Email and confirmation code are required.' });
+    }
+
     try {
         const user = await User.findOne({ email });
         if (!user) {
@@ -164,6 +169,7 @@ app.post('/confirm-email', async (req, res) => {
         console.error('Error confirming email:', error);
         res.status(500).json({ message: 'Server error.' });
     }
+
 });
 
 // HTTP маршруты
@@ -224,7 +230,7 @@ app.post('/register', async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
+        const confirmationCode = generateConfirmationCode(); 
         const newUser = new User({
             name,
             uniqecode: username,
@@ -233,7 +239,8 @@ app.post('/register', async (req, res) => {
             confirmed: false,  // Пакуль не пацверджаны
             confirmationCode,  // Дадаць код пацверджання
             currentNum: 0,
-            totalNum: 0
+            totalNum: 0,
+            
         });
 
         await newUser.save();
