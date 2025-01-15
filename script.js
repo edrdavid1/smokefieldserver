@@ -21,8 +21,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const http = require('http');
 const WebSocket = require('ws');
-const mongoose = require('mongoose');
 
+const PORT = process.env.PORT || 3000;
 
 // Мадэль карыстальніка
 const userSchema = new mongoose.Schema({
@@ -205,7 +205,3 @@ app.post('/login', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Сервер запушчаны на порце ${PORT}`);
-});
