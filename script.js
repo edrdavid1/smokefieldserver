@@ -147,38 +147,35 @@ wss.on('connection', (ws) => {
 app.post('/confirm-email', async (req, res) => {
     const { email, confirmationCode } = req.body;
 
-    console.log('Request body:', req.body); // Адладка
-
-    if (!email || !confirmationCode) {
-        console.log('Missing email or confirmation code');
-        return res.status(400).json({ message: 'Email and confirmation code are required.' });
-    }
-
     try {
+        // Дастаем карыстальніка па email
         const user = await User.findOne({ email });
-        console.log('Found user:', user); // Адладка
 
+        // Правяраем, ці знойдзены карыстальнік
         if (!user) {
-            console.log('User not found for email:', email);
             return res.status(404).json({ message: 'User not found.' });
         }
 
+        // Параўноўваем код з базы з тым, што прыйшоў у запыце
         if (user.confirmationCode !== confirmationCode) {
-            console.log(`Invalid code. Expected: ${user.confirmationCode}, Received: ${confirmationCode}`);
             return res.status(400).json({ message: 'Invalid confirmation code.' });
         }
 
+        // Дадатковая праверка: ці ўжо пацверджаны email
+        if (user.confirmed) {
+            return res.status(400).json({ message: 'Email already confirmed.' });
+        }
+
+        // Абнаўляем статус карыстальніка ў базе
         user.confirmed = true;
         await user.save();
-        console.log('Email confirmed for:', email); // Адладка
 
-        res.status(200).json({ message: 'Email confirmed successfully.' });
+        res.status(200).json({ message: 'Email confirmed successfully!' });
     } catch (error) {
-        console.error('Error confirming email:', error);
+        console.error('Error:', error);
         res.status(500).json({ message: 'Server error.' });
     }
 });
-
 
 // HTTP маршруты
 app.get('/userdata/:username', async (req, res) => {
