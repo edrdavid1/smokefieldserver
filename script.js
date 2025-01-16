@@ -227,31 +227,38 @@ const { body, validationResult } = require('express-validator');
 app.post('/register', async (req, res) => {
     const { username, password, name, email } = req.body;
 
+    // Зводзім username і email да ніжняга рэгістру
+    const normalizedUsername = username.toLowerCase();
+    const normalizedEmail = email.toLowerCase();
+
     const confirmationCode = generateConfirmationCode(); // Генерацыя кода
 
     try {
-        const existingUser = await User.findOne({ uniqecode: username });
+        // Правяраем, ці ўжо існуе карыстальнік з такім username
+        const existingUser = await User.findOne({ uniqecode: normalizedUsername });
         if (existingUser) {
             return res.status(400).json({ message: 'Username is already taken.' });
         }
 
+        // Хэшаванне пароля
         const hashedPassword = await bcrypt.hash(password, 10);
         
+        // Стварэнне новага карыстальніка
         const newUser = new User({
             name,
-            uniqecode: username,
-            email,
+            uniqecode: normalizedUsername, // Захоўваем username у ніжнім рэгістры
+            email: normalizedEmail,         // Захоўваем email у ніжнім рэгістры
             password: hashedPassword,
             confirmed: false,
-            confirmationCode,  // Дадаем код пацверджання
+            confirmationCode,               // Дадаем код пацверджання
             currentNum: 0,
             totalNum: 0,
         });
 
         await newUser.save();
 
-        // Адпраўляем код на пошту
-        sendConfirmationEmail(email, confirmationCode);
+        // Адпраўляем код пацверджання на пошту
+        sendConfirmationEmail(normalizedEmail, confirmationCode);
 
         res.status(201).json({ message: 'User registered successfully. Please check your email to confirm your account.' });
     } catch (error) {
@@ -260,24 +267,32 @@ app.post('/register', async (req, res) => {
     }
 });
 
+
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const user = await User.findOne({ uniqecode: username });
+        // Зводзім username да ніжняга рэгістру
+        const normalizedUsername = username.toLowerCase();
+
+        // Пошук карыстальніка па зводзеным да ніжняга рэгістру uniqecode
+        const user = await User.findOne({ uniqecode: normalizedUsername });
         if (!user) {
             return res.status(400).json({ message: 'User not found.' });
         }
 
+        // Праверка пароля
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid password.' });
         }
 
-        const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Генерацыя токена
+        const token = jwt.sign({ username: user.uniqecode }, process.env.JWT_SECRET, { expiresIn: '1h' });
         res.json({ message: 'Login successful!', token });
     } catch (error) {
         console.error('Error logging in:', error);
         res.status(500).json({ message: 'Server error.' });
     }
 });
+
