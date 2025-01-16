@@ -193,34 +193,40 @@ app.get('/userdata/:username', async (req, res) => {
 });
 
 app.post('/updateuser', async (req, res) => {
-    const { userGG, userBB } = req.body;
+    // Зводзім userGG і userBB да ніжняга рэгістру
+    const userGG = req.body.userGG.toLowerCase();
+    const userBB = req.body.userBB.toLowerCase();
+
     console.log('Received:', { userGG, userBB });
 
-    if(userGG != userBB){
-    try {
-        const userBBData = await User.findOne({ uniqecode: userBB });
-        const userGGData = await User.findOne({ uniqecode: userGG });
+    if (userGG !== userBB) {
+        try {
+            // Шуканне карыстальнікаў у базе дадзеных
+            const userBBData = await User.findOne({ uniqecode: userBB });
+            const userGGData = await User.findOne({ uniqecode: userGG });
 
-        if (userBBData && userGGData) {
-            userBBData.currentNum -= 1;
-            userGGData.totalNum += 1;
-            userGGData.currentNum += 1;
+            if (userBBData && userGGData) {
+                // Абнаўленне дадзеных карыстальнікаў
+                userBBData.currentNum -= 1;
+                userGGData.totalNum += 1;
+                userGGData.currentNum += 1;
 
-            await userBBData.save();
-            await userGGData.save();
+                await userBBData.save();
+                await userGGData.save();
 
-            res.json({ success: true, userBBData, userGGData });
-        } else {
-            res.status(404).json({ success: false, message: 'User not found' });
+                res.json({ success: true, userBBData, userGGData });
+            } else {
+                res.status(404).json({ success: false, message: 'User not found' });
+            }
+        } catch (error) {
+            console.error('Error updating user data:', error);
+            res.status(500).json({ message: 'Server error.' });
         }
-    } catch (error) {
-        console.error('Error updating user data:', error);
-        res.status(500).json({ message: 'Server error.' });
+    } else {
+        res.status(400).json({ message: 'Ты не можаш страляць у самога сябе' });
     }
-} else{
-    res.status(923).json({ message: 'Ты не можаш страляць у самога сябе' });
-}
 });
+
 
 const { body, validationResult } = require('express-validator');
 
